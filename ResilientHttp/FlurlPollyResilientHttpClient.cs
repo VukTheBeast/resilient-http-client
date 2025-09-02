@@ -6,6 +6,9 @@ using Polly.Contrib.WaitAndRetry;
 using resilient_http_client.ResilientHttp.Abstractions;
 using resilient_http_client.ResilientHttp.Configuration;
 using resilient_http_client.ResilientHttp.Policies;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace resilient_http_client.ResilientHttp;
 
@@ -54,6 +57,56 @@ internal sealed class FlurlPollyResilientHttpClient : IResilientHttpClient
     {
         await ExecuteWithPerCallPolicyAsync(
             () => CreateRequest(url, options).DeleteAsync(cancellationToken: cancellationToken),
+            options,
+            cancellationToken);
+    }
+
+    public async Task<TResponse> PostStreamAsync<TResponse>(string url, Stream data, string formFieldName, string fileName, RequestOptions? options = null, string? contentType = null, CancellationToken cancellationToken = default)
+        => await ExecuteWithPerCallPolicyAsync(
+            async () =>
+            {
+                using var streamContent = new StreamContent(data);
+                if (!string.IsNullOrEmpty(contentType))
+                {
+                    streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                }
+                using var multipart = new MultipartFormDataContent();
+                multipart.Add(streamContent, formFieldName, fileName);
+
+                var resp = await CreateRequest(url, options).SendAsync(HttpMethod.Post, multipart, cancellationToken: cancellationToken);
+                return await resp.GetJsonAsync<TResponse>();
+            },
+            options,
+            cancellationToken);
+
+    public async Task<TResponse> PostStreamAsync<TResponse>(string url, Func<Stream> streamFactory, string formFieldName, string fileName, RequestOptions? options = null, string? contentType = null, CancellationToken cancellationToken = default)
+    {
+        _logger?.LogDebug("[POST_STREAM] Starting execution for URL: {Url}", url);
+        return await ExecuteWithPerCallPolicyAsync(
+            async () =>
+            {
+                _logger?.LogInformation("[STREAM] Invoking stream factory...");
+                await using var stream = streamFactory();
+                if (stream == null)
+                {
+                    _logger?.LogError("[STREAM] Stream factory returned null.");
+                    throw new InvalidOperationException("Stream factory returned a null stream.");
+                }
+                _logger?.LogInformation("[STREAM] Created stream. Length: {Length}, CanRead: {CanRead}", stream.Length, stream.CanRead);
+
+                using var streamContent = new StreamContent(stream);
+                if (!string.IsNullOrEmpty(contentType))
+                {
+                    streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                }
+                using var multipart = new MultipartFormDataContent();
+                multipart.Add(streamContent, formFieldName, fileName);
+
+                var resp = await CreateRequest(url, options).SendAsync(HttpMethod.Post, multipart, cancellationToken: cancellationToken);
+                var json = await resp.GetJsonAsync<TResponse>();
+                _logger?.LogInformation("[POST_STREAM] Successfully completed request.");
+                return json;
+            },
             options,
             cancellationToken);
     }
