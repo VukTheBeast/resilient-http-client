@@ -8,29 +8,33 @@ Add packages (already referenced in the project if you use this repo):
 
 ```bash
 dotnet add package Flurl.Http --version 4.0.0
-dotnet add package Polly --version 7.2.3
+dotnet add package Polly --version 7.2.4
+dotnet add package Polly.Contrib.WaitAndRetry --version 1.1.1
 ```
 
-If you need the `PolicyHttpMessageHandler` variant, you can also add:
-
-```bash
-dotnet add package Microsoft.Extensions.Http.Polly --version 8.0.8
-```
+Optional:
+- `Microsoft.Extensions.Http.Polly` if you want to use built-in handlers.
 
 ### Library Surface
 
 - `IResilientHttpClient`
-  - `Task<T> GetAsync<T>(string url, CancellationToken ct = default)`
-  - `Task<string> GetStringAsync(string url, CancellationToken ct = default)`
-  - `Task<TResponse> PostJsonAsync<TRequest,TResponse>(string url, TRequest body, CancellationToken ct = default)`
-  - `Task<TResponse> PutJsonAsync<TRequest,TResponse>(string url, TRequest body, CancellationToken ct = default)`
-  - `Task DeleteAsync(string url, CancellationToken ct = default)`
+  - `Task<T> GetAsync<T>(string url, RequestOptions? options = null, CancellationToken ct = default)`
+  - `Task<string> GetStringAsync(string url, RequestOptions? options = null, CancellationToken ct = default)`
+  - `Task<TResponse> PostJsonAsync<TRequest,TResponse>(string url, TRequest body, RequestOptions? options = null, CancellationToken ct = default)`
+  - `Task<TResponse> PutJsonAsync<TRequest,TResponse>(string url, TRequest body, RequestOptions? options = null, CancellationToken ct = default)`
+  - `Task DeleteAsync(string url, RequestOptions? options = null, CancellationToken ct = default)`
 
 - `ResilienceOptions`
   - `int RetryCount` (default: 3)
-  - `TimeSpan BaseDelay` (default: 200ms, exponential backoff)
+  - `TimeSpan BaseDelay` (default: 200ms, jittered exponential backoff)
   - `TimeSpan? Timeout` (default: 30s)
   - `Func<HttpStatusCode, bool>? AdditionalHttpRetry` (extend retryable status codes)
+
+- `RequestOptions`
+  - `string? BearerToken`
+  - `(string UserName, string Password)? BasicAuth`
+  - `IReadOnlyCollection<KeyValuePair<string,string>>? Headers`
+  - `Func<HttpStatusCode, bool>? AdditionalRetryForStatus`
 
 - DI extension: `ServiceCollectionExtensions.AddResilientHttpClient(...)`
 
@@ -55,20 +59,42 @@ public class MyService
 
     public MyService(IResilientHttpClient http) => _http = http;
 
-    public Task<Foo> GetFooAsync(string id, CancellationToken ct)
-        => _http.GetAsync<Foo>($"https://api.example.com/foo/{id}", ct);
+    public Task<Foo> GetFooAsync(string id, string token, string tenantId, CancellationToken ct)
+        => _http.GetAsync<Foo>($"https://api.example.com/foo/{id}", new RequestOptions
+        {
+            BearerToken = token,
+            Headers = new[] { new KeyValuePair<string,string>("X-Tenant", tenantId) }
+        }, ct);
 
     public Task<string> GetHealthAsync(CancellationToken ct)
-        => _http.GetStringAsync("https://api.example.com/health", ct);
+        => _http.GetStringAsync("https://api.example.com/health", null, ct);
 
-    public Task<Foo> CreateFooAsync(FooCreate req, CancellationToken ct)
-        => _http.PostJsonAsync<FooCreate, Foo>("https://api.example.com/foo", req, ct);
+    public Task<Foo> CreateFooAsync(FooCreate req, string user, string pass, CancellationToken ct)
+        => _http.PostJsonAsync<FooCreate, Foo>("https://api.example.com/foo", req, new RequestOptions
+        {
+            BasicAuth = (user, pass)
+        }, ct);
 }
 ```
 
 ### Retry Behavior
 
-The default policy retries on network errors and transient HTTP status codes: 408, 429, and 5xx. Backoff uses exponential growth based on `BaseDelay`. You can extend with `AdditionalHttpRetry` to include more status codes.
+The default policy retries on network errors and transient HTTP status codes: 408, 429, and 5xx. Backoff uses jittered exponential delays via `Polly.Contrib.WaitAndRetry` based on `BaseDelay`.
+
+- Global extension: configure `ResilienceOptions.AdditionalHttpRetry` to add more status codes globally.
+- Per-call extension: pass `RequestOptions.AdditionalRetryForStatus` to add retry logic for a specific call.
+
+Example (per-call retry on 409 Conflict):
+
+```csharp
+var result = await _http.PostJsonAsync<Req, Res>(
+    "https://api.example.com/items",
+    requestBody,
+    new RequestOptions {
+        AdditionalRetryForStatus = status => status == HttpStatusCode.Conflict
+    },
+    ct);
+```
 
 ### Without DI (Factory)
 
