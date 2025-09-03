@@ -1,4 +1,4 @@
-namespace resilient_http_client.ResilientHttp.Abstractions;
+namespace ResilientHttp.Abstractions;
 
 public interface IResilientHttpClient
 {

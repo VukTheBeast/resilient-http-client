@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 
-namespace resilient_http_client.ResilientHttp.Configuration;
+namespace ResilientHttp.Configuration;
 
 public sealed class RequestOptions
 {

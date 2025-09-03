@@ -1,7 +1,7 @@
-using resilient_http_client.ResilientHttp.Abstractions;
-using resilient_http_client.ResilientHttp.Configuration;
+using ResilientHttp.Abstractions;
+using ResilientHttp.Configuration;
 
-namespace resilient_http_client.ResilientHttp.Factory;
+namespace ResilientHttp.Factory;
 
 public static class ResilientHttpClientFactory
 {

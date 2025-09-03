@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using resilient_http_client.ResilientHttp.Abstractions;
-using resilient_http_client.ResilientHttp.Configuration;
+using ResilientHttp.Abstractions;
+using ResilientHttp.Configuration;
 
-namespace resilient_http_client.ResilientHttp.DI;
+namespace ResilientHttp.DI;
 
 public static class ServiceCollectionExtensions
 {

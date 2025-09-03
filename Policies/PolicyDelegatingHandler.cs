@@ -1,6 +1,6 @@
 using Polly;
 
-namespace resilient_http_client.ResilientHttp.Policies;
+namespace ResilientHttp.Policies;
 
 internal sealed class PolicyDelegatingHandler : DelegatingHandler
 {

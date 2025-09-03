@@ -1,7 +1,7 @@
 using System.Net;
-using resilient_http_client.ResilientHttp.Configuration;
+using ResilientHttp.Configuration;
 
-namespace resilient_http_client.ResilientHttp.Policies;
+namespace ResilientHttp.Policies;
 
 internal static class PollyHttpUtilities
 {

@@ -3,14 +3,14 @@ using System.Net;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
-using resilient_http_client.ResilientHttp.Abstractions;
-using resilient_http_client.ResilientHttp.Configuration;
-using resilient_http_client.ResilientHttp.Policies;
+using ResilientHttp.Abstractions;
+using ResilientHttp.Configuration;
+using ResilientHttp.Policies;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
-namespace resilient_http_client.ResilientHttp;
+namespace ResilientHttp;
 
 internal sealed class FlurlPollyResilientHttpClient : IResilientHttpClient
 {
