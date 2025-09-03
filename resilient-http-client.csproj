@@ -2,9 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>resilient_http_client</RootNamespace>
+    <RootNamespace>ResilientHttp</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>VukTheBeast.ResilientHttp.Client</PackageId>
+    <Authors>Vuk Manic</Authors>
+    <Company>Vuk Manic</Company>
+    <Description>A small, reusable .NET 8 library that wraps Flurl with Polly-based retry and timeout policies. Designed for SOLID and high cohesion: interface-driven, configurable options, and DI-friendly.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/VukTheBeast/resilient-http-client</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Version>1.0.0</Version>
+    <PackageTags>flurl;polly;resilient;http;client</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

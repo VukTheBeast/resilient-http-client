@@ -1,0 +1,32 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Pack
+      run: dotnet pack --configuration Release --no-build --output ./nupkg
+      
+    - name: Publish to GitHub Packages
+      run: dotnet nuget push "./nupkg/*.nupkg" --source https://nuget.pkg.github.com/VukTheBeast/index.json --api-key ${{ secrets.PERSONAL_ACCESS_TOKEN }} --skip-duplicate
